@@ -70,21 +70,39 @@ app.post("/api/login", (req, res) => {
   );
 });
 
-// Endpoint para el registro de usuarios
+// Endpoint para registrar
 app.post("/api/register", (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
     return res.status(400).json({ mensaje: "Debe completar todos los campos" });
   }
 
+  // aqui verificamos que el username no este registrado en la bd
   db.query(
-    "INSERT INTO users (username, password) VALUES ( ?, ?)",
-    [username, password],
-    (err, result) => {
-      if (err) {
-        res.status(500).json({ mensaje: "Error al registrar usuario" });
+    "SELECT * FROM users WHERE username = ?",
+    [username],
+    (error, results) => {
+      if (error) {
+        res
+          .status(500)
+          .json({ mensaje: "Error al buscar el nombre de usuario" });
+      } else if (results.length > 0) {
+        res.status(409).json({ mensaje: "Nombre de usuario ya está en uso" });
       } else {
-        res.status(201).json({ mensaje: "Usuario registrado correctamente" });
+        // El nombre de usuario no está en uso, procede con la inserción
+        db.query(
+          "INSERT INTO users (username, password) VALUES (?, ?)",
+          [username, password],
+          (err, result) => {
+            if (err) {
+              res.status(500).json({ mensaje: "Error al registrar usuario" });
+            } else {
+              res
+                .status(201)
+                .json({ mensaje: "Usuario registrado correctamente" });
+            }
+          }
+        );
       }
     }
   );
@@ -141,9 +159,7 @@ app.post("/api/protected", verifyToken, (req, res) => {
     if (error) {
       res.sendStatus(403);
     } else {
-      res.json({
-        message: "Ruta protegida",
-      });
+      res.sendStatus(200)
     }
   });
 });
