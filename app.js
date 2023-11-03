@@ -155,18 +155,22 @@ app.delete("/api/users/:id", (req, res) => {
 
 // Ruta protegida
 app.post("/api/protected", verifyToken, (req, res) => {
-  jwt.verify(req.cookies.token, "secretkey", (error, authData) => {
+  jwt.verify(req.token, "secretkey", (error, authData) => {
     if (error) {
       res.sendStatus(403);
     } else {
-      res.sendStatus(200)
+      res.json({
+        message: "Ruta protegida",
+      });
     }
   });
 });
 
 function verifyToken(req, res, next) {
-  const token = req.cookies.token;
-  if (typeof token !== "undefined") {
+  const bearerHeader = req.headers['authorization']
+  if (typeof bearerHeader !== "undefined") {
+    const bearerToken = bearerHeader.split(" ")[1];
+    req.token = bearerToken;
     next();
   } else {
     res.sendStatus(403);
